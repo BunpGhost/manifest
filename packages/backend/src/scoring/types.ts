@@ -94,4 +94,6 @@ export interface ScorerConfig {
   confidenceK: number;
   confidenceMidpoint: number;
   confidenceThreshold: number;
+  /** Language for keyword matching. Supported: 'en' (default), 'pt'. */
+  language?: string;
 }

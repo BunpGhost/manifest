@@ -62,6 +62,12 @@ function buildTrie(config: ScorerConfig): KeywordTrie {
 
 function mergeConfig(partial?: Partial<ScorerConfig>): ScorerConfig {
   if (!partial) return DEFAULT_CONFIG;
+  // If language is specified, rebuild dimensions with localized keywords
+  if (partial.language && partial.language !== DEFAULT_CONFIG.language) {
+    const { buildConfig } = require('./config');
+    const langConfig = buildConfig(partial.language);
+    return { ...langConfig, ...partial, dimensions: langConfig.dimensions };
+  }
   return { ...DEFAULT_CONFIG, ...partial };
 }
 

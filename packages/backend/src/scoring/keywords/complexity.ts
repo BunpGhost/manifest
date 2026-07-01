@@ -2,8 +2,13 @@
  * Complexity-scoring keywords. Each dimension maps to a weight in
  * `scoring/config.ts` — keywords push a message toward a higher (or lower)
  * complexity tier when matched.
+ * 
+ * Supports multiple languages. Use getComplexityKeywords(language) to retrieve
+ * the correct set for the configured language.
  */
-export const COMPLEXITY_KEYWORDS: Record<string, string[]> = {
+import { PT_COMPLEXITY_KEYWORDS } from './complexity-pt';
+
+export const COMPLEXITY_KEYWORDS_EN: Record<string, string[]> = {
   formalLogic: [
     'prove',
     'proof',
@@ -400,3 +405,20 @@ export const COMPLEXITY_KEYWORDS: Record<string, string[]> = {
     'mark as read',
   ],
 };
+
+/**
+ * All available complexity keyword sets, indexed by language code.
+ * Defaults to English if the language is not found.
+ */
+export const COMPLEXITY_KEYWORDS: Record<string, Record<string, string[]>> = {
+  en: COMPLEXITY_KEYWORDS_EN,
+  pt: PT_COMPLEXITY_KEYWORDS,
+};
+
+/**
+ * Get complexity keywords for the specified language.
+ * Falls back to English if the language is not supported.
+ */
+export function getComplexityKeywords(language: string = 'en'): Record<string, string[]> {
+  return COMPLEXITY_KEYWORDS[language] || COMPLEXITY_KEYWORDS.en;
+}
