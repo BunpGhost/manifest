@@ -16,7 +16,7 @@ import {
   readOverrideRoute,
 } from '../routing-core/route-helpers';
 import { effectiveRoutesForResponseMode } from '../routing-core/response-mode-guard';
-import { scoreRequest, ScorerInput, MomentumInput, scanMessages } from '../../scoring';
+import { scoreRequest, ScorerInput, ScorerConfig, MomentumInput, scanMessages } from '../../scoring';
 import { ResolveResponse } from '../dto/resolve-response';
 import { inferProviderFromModelName } from '../../common/utils/provider-aliases';
 import { Agent } from '../../entities/agent.entity';
