@@ -29,7 +29,7 @@ import {
 } from './dimensions';
 import { applyMomentum, MomentumInput } from './momentum';
 import { computeConfidence, scoreToTier } from './sigmoid';
-import { checkFormalLogicOverride, estimateTotalTokens } from './overrides';
+import { checkFormalLogicOverride } from './overrides';
 
 export type {
   ScorerInput,
@@ -274,14 +274,6 @@ function applyTierFloors(
     if (floored !== tier) {
       tier = floored;
       reason = 'tool_detected';
-    }
-  }
-
-  if (estimateTotalTokens(messages) > 50_000) {
-    const floored = maxTier(tier, 'complex');
-    if (floored !== tier) {
-      tier = floored;
-      reason = 'large_context';
     }
   }
 

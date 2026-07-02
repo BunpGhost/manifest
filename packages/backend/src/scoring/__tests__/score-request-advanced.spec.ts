@@ -39,24 +39,23 @@ describe('scoreRequest — configOverride', () => {
   });
 });
 
-describe('scoreRequest — large context override', () => {
-  it('floors tier to COMPLEX for >50k estimated tokens', () => {
+describe('scoreRequest — no large context override (removed in fork)', () => {
+  it('scores repetitive text without inflating tier', () => {
     const longContent = 'x'.repeat(200_001);
     const result = scoreRequest({
       messages: [{ role: 'user', content: longContent }],
     });
-    expect(['complex', 'reasoning']).toContain(result.tier);
+    expect(['simple', 'standard']).toContain(result.tier);
+    expect(result.reason).not.toBe('large_context');
   });
 
-  it('reports "large_context" reason when floor changes tier', () => {
+  it('does not report large_context reason', () => {
     const msgs = [
       { role: 'system', content: 'x'.repeat(200_001) },
       { role: 'user', content: 'what is this about' },
     ];
     const result = scoreRequest({ messages: msgs });
-    if (result.reason === 'large_context') {
-      expect(['complex', 'reasoning']).toContain(result.tier);
-    }
+    expect(result.reason).not.toBe('large_context');
   });
 });
 
