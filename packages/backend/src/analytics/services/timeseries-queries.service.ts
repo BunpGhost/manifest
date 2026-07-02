@@ -713,6 +713,39 @@ export class TimeseriesQueriesService {
     return rows.map((r: Record<string, unknown>) => String(r['agent_name']));
   }
 
+  async getTierBreakdown(
+    range: string,
+    tenantId: string | null,
+    agentName?: string,
+    excludePlayground = false,
+  ) {
+    const interval = rangeToInterval(range);
+    const cutoff = computeCutoff(interval);
+
+    const qb = this.turnRepo
+      .createQueryBuilder('at')
+      .select('at.routing_tier', 'tier')
+      .addSelect('COUNT(*)', 'count')
+      .where('at.timestamp >= :cutoff', { cutoff })
+      .andWhere('at.routing_tier IS NOT NULL');
+    addTenantFilter(qb, tenantId, agentName);
+    if (excludePlayground) excludePlaygroundAgents(qb);
+
+    const rows = await qb.groupBy('at.routing_tier').orderBy('count', 'DESC').getRawMany();
+
+    const totalCount = rows.reduce(
+      (sum: number, r: Record<string, unknown>) => sum + Number(r['count'] ?? 0),
+      0,
+    );
+
+    return rows.map((r: Record<string, unknown>) => ({
+      tier: String(r['tier']),
+      count: Number(r['count'] ?? 0),
+      share_pct:
+        totalCount === 0 ? 0 : Math.round((Number(r['count'] ?? 0) / totalCount) * 1000) / 10,
+    }));
+  }
+
   private parseBucketRow(
     r: Record<string, unknown>,
     bucketAlias: 'hour' | 'date',

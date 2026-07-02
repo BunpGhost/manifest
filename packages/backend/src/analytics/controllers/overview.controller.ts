@@ -179,6 +179,14 @@ export class OverviewController {
     return this.timeseries.getPerModelMessageTimeseries(range, ctx.tenantId, hourly, agentName);
   }
 
+  @Get('overview/tier-breakdown')
+  async getTierBreakdown(@Query() query: RangeQueryDto, @TenantCtx() ctx: TenantContext) {
+    const range = query.range ?? '24h';
+    return this.timeseries.getTierBreakdown(range, ctx.tenantId, query.agent_name, true);
+  }
+
+  /**
+   * Shared derivation
   /**
    * Shared derivation of the (range, hourly, agentName) tuple every
    * `overview/per-*-timeseries` endpoint needs. Extracted so the per-endpoint

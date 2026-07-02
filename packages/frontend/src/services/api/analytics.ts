@@ -168,3 +168,9 @@ export function getHealth() {
 export function getModelPrices() {
   return fetchJson('/model-prices');
 }
+export function getTierBreakdown(range = '24h', agentName?: string) {
+  return fetchJson('/overview/tier-breakdown', {
+    range,
+    ...(agentName ? { agent_name: agentName } : {}),
+  });
+}

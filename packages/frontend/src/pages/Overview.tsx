@@ -13,6 +13,7 @@ import ProviderChartCard from '../components/ProviderChartCard.jsx';
 import FilterSelect from '../components/FilterSelect.jsx';
 import { AGENT_COLORS } from '../components/MultiAgentTokenChart.jsx';
 import CostByModelTable from '../components/CostByModelTable.jsx';
+import TierBreakdownChart from '../components/TierBreakdownChart.js';
 import ErrorState from '../components/ErrorState.jsx';
 import FeedbackModal from '../components/FeedbackModal.jsx';
 import MessageTable from '../components/MessageTable.jsx';
@@ -23,7 +24,12 @@ import { type MessageRow } from '../components/message-table-types.js';
 import { agentDisplayName } from '../services/agent-display-name.js';
 import { agentPlatform, agentCategory } from '../services/agent-platform-store.js';
 import { PROVIDERS } from '../services/providers.js';
-import { getOverview, setMessageFeedback, clearMessageFeedback } from '../services/api.js';
+import {
+  getOverview,
+  setMessageFeedback,
+  clearMessageFeedback,
+  getTierBreakdown,
+} from '../services/api.js';
 import {
   getPerProviderTimeseries,
   getPerProviderMessageTimeseries,
@@ -255,6 +261,11 @@ const Overview: Component = () => {
     tsKey,
     (p) => getPerProviderMessageTimeseries(p.agent, p.range) as Promise<PivotedTimeseries>,
   );
+  const [tierBreakdown] = createResource(
+    () => ({ range: range(), agentName: params.agentName, _ping: messagePing() }),
+    (p) => getTierBreakdown(p.range, p.agentName),
+  );
+
   const [providerCostTs] = createResource(
     () => (costChartRequested() ? tsKey() : false),
     (p) => getPerProviderCostTimeseries(p.agent, p.range) as Promise<PivotedTimeseries>,
@@ -476,6 +487,7 @@ const Overview: Component = () => {
                   </div>
 
                   <CostByModelTable rows={d().cost_by_model ?? []} />
+                  <TierBreakdownChart rows={tierBreakdown() ?? []} />
                 </>
               );
             }}
