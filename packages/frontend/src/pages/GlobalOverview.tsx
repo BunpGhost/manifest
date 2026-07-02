@@ -181,7 +181,7 @@ const GlobalOverview: Component = () => {
 
   // ── Data resources (5 parallel) ──────────────────────────────────────
   const [tierBreakdown] = createResource(
-    () => ({ range: range(), _ping: messagePing() }),
+    () => ({ range: chartRange(), _ping: messagePing() }),
     (p) => getTierBreakdown(p.range),
   );
 
