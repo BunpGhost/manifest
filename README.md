@@ -8,18 +8,31 @@
 Complexity-based routing is essential for our setup, and this fork ensures it continues working as we need. The patches address:
 
 - **Hermes Agent scoring fix** — Hermes appends memory context (`[System note: ...]`) at the end of each message, which inflated the score of short PT-PT messages and routed them to expensive tiers.
+- **PT-PT multilingual routing** — Portuguese keywords added to the classifier for accurate complexity detection on short PT-PT messages.
 - **Deprecation banner removed** — irrelevant for a fork where complexity routing is the primary feature.
 - **Always-visible complexity toggle** — the `legacyComplexityVisible()` gate is removed so the toggle is never hidden.
+- **Tier breakdown chart** — visual pie/bar chart in the Global Overview showing tier distribution (simple/standard/complex/reasoning).
+- **50K context override removed** — upstream hardcoded a 50K context limit; removed to allow full provider context windows (e.g. 1M for DeepSeek V4).
 
 ## What was changed
 
-| Patch | File | Description |
+| Patch | File(s) | Description |
 |-------|------|-------------|
-| Envelope peeler | `scoring/envelope-peeler.ts` | New `stripTrailingContext()` strips Hermes context from end of messages before scoring |
-| Deprecation notice | `components/RoutingDeprecationNotice.tsx` + section files | Empty component, removed rendering |
+| PT-PT multilingual keywords | `scoring/` | Portuguese scoring patterns for accurate complexity classification in PT-PT |
+| Envelope peeler | `scoring/envelope-peeler.ts` | `stripTrailingContext()` strips Hermes context from end of messages before scoring |
+| Deprecation banner removed | `components/RoutingDeprecationNotice.tsx` + `RoutingDefaultTierSection.tsx` + `RoutingSpecificitySection.tsx` | Empty component, removed all rendering call sites |
 | Toggle always visible | `pages/Routing.tsx` | `showComplexityToggle={() => true}` |
+| Tier breakdown chart | `components/GlobalOverview.tsx` | Pie/bar chart in Global Overview showing tier distribution |
+| 50K context override removed | Manifest admin config | Removed `max_tokens` override so providers use native context limits |
 
-**Commit:** `a88f8f09a`
+**Latest commit:** `cd2160a90`
+
+## Setup notes
+
+- **Provider:** OpenCode Go subscription — DeepSeek V4 Flash (simple/standard), DeepSeek V4 Pro (complex/reasoning)
+- **SEED_DATA:** disabled (`SEED_DATA=false`) — clean DB, only production data
+- **API keys:** separate keys per Hermes agent profile (Cló, Tikita, Finus, Fri)
+- **Database:** PostgreSQL, schema managed via Manifest migrations
 
 ## Upstream
 
