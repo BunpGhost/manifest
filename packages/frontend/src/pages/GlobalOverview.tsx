@@ -24,6 +24,7 @@ import { customProviderLogo } from '../components/ProviderIcon.jsx';
 import { stripCustomPrefix } from '../services/routing-utils.js';
 import {
   getOverview,
+  getTierBreakdown,
   getOverviewAgentUsage,
   getOverviewProviderUsage,
 } from '../services/api/analytics.js';
@@ -35,6 +36,7 @@ import { AGENT_COLORS } from '../components/MultiAgentTokenChart.jsx';
 import ProviderChartCard from '../components/ProviderChartCard.jsx';
 import SocialFollowBanner from '../components/SocialFollowBanner.jsx';
 import Sparkline from '../components/Sparkline.jsx';
+import TierBreakdownChart from '../components/TierBreakdownChart.js';
 import FilterSelect from '../components/FilterSelect.jsx';
 import Select from '../components/Select.jsx';
 import { authLabel, authBadgeFor } from '../components/AuthBadge.jsx';
@@ -178,6 +180,11 @@ const GlobalOverview: Component = () => {
   const [selfHosted] = createResource(checkIsSelfHosted);
 
   // ── Data resources (5 parallel) ──────────────────────────────────────
+  const [tierBreakdown] = createResource(
+    () => ({ range: range(), _ping: messagePing() }),
+    (p) => getTierBreakdown(p.range),
+  );
+
   const [overview] = createResource(
     () => ({ range: chartRange(), _ping: messagePing() }),
     (p) => getOverview(p.range) as Promise<OverviewResponse>,
@@ -1050,6 +1057,8 @@ const GlobalOverview: Component = () => {
             </table>
           </div>
         </div>
+
+        <TierBreakdownChart rows={tierBreakdown() ?? []} />
 
         {/* ── 6. Provider connections (full width) ────────────────────── */}
         <div class="panel scroll-panel" style="margin-bottom: 24px;">
