@@ -1,4 +1,4 @@
-import { peelEnvelope } from '../envelope-peeler';
+import { peelEnvelope, stripTrailingContext } from '../envelope-peeler';
 
 const OPENCLAW = [
   'Sender (untrusted metadata):',
@@ -52,9 +52,9 @@ describe('peelEnvelope', () => {
     expect(peelEnvelope(text)).toBe(text);
   });
 
-  it('returns the original when an envelope header has no following fence', () => {
+  it('peels a header followed by plain human text', () => {
     const text = 'Sender (untrusted metadata):\nhello';
-    expect(peelEnvelope(text)).toBe(text);
+    expect(peelEnvelope(text)).toBe('hello');
   });
 
   it('returns the original when nothing follows the envelope', () => {
@@ -191,5 +191,61 @@ describe('peelEnvelope', () => {
     // and the YAML fallback also rejects (no valid key/value lines).
     const text = '```\n[ foo: bar }\n```\n\nhi';
     expect(peelEnvelope(text)).toBe(text);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stripTrailingContext — Hermes memory context strip from message end
+// ---------------------------------------------------------------------------
+
+describe('stripTrailingContext', () => {
+  it('returns empty input unchanged', () => {
+    expect(stripTrailingContext('')).toBe('');
+  });
+
+  it('returns text unchanged when no trailing context', () => {
+    expect(stripTrailingContext('boa noite')).toBe('boa noite');
+  });
+
+  it('removes [System note: ...] block from end', () => {
+    const input =
+      'boa noite\n\n\n[System note: The following is recalled memory context. This is NOT new user input.]';
+    expect(stripTrailingContext(input)).toBe('boa noite');
+  });
+
+  it('preserves message with only context block (no user text)', () => {
+    const input = '\n\n\n[System note: recalled memory context]';
+    expect(stripTrailingContext(input)).toBe(input);
+  });
+
+  it('removes <memory-context> block from end', () => {
+    const input = 'say hello\n\n\n<memory-context session="abc123">context</memory-context>';
+    expect(stripTrailingContext(input)).toBe('say hello');
+  });
+
+  it('handles multi-line System note with CRLF', () => {
+    const multiline = 'test\r\n\r\n\r\n[System note: line 1\r\nline 2\r\nline 3]';
+    expect(stripTrailingContext(multiline)).toBe('test');
+  });
+
+  it('strips trailing whitespace after context removal', () => {
+    const input = '  hello world  \n\n\n[System note: x]  ';
+    expect(stripTrailingContext(input)).toBe('hello world');
+  });
+
+  it('integrates with peelEnvelope: trailing context does not inflate envelope detection', () => {
+    // Realistic Hermes case — short user message with trailing context
+    const hermeseWithContext =
+      'boa noite\n\n\n[System note: The following is recalled memory context. This is NOT new user input.]';
+    const result = peelEnvelope(hermeseWithContext);
+    // Should be preserved as-is (not caught by envelope detector), just context stripped
+    expect(result).toBe('boa noite');
+  });
+
+  it('integrates with peelEnvelope: full Hermes message with both start envelope and trailing context', () => {
+    const fullHermes =
+      'Sender (untrusted metadata):\n```json\n{"label":"openclaw-tui","id":"test"}\n```\n\nsay hello\n\n\n[System note: recalled memory context]';
+    const result = peelEnvelope(fullHermes);
+    expect(result).toBe('say hello');
   });
 });

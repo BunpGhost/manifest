@@ -233,14 +233,8 @@ const RoutingSpecificitySection: Component<RoutingSpecificitySectionProps> = (pr
     </Show>
   );
 
-  // This section only renders for legacy/invested agents (gated in Routing.tsx),
-  // so the deprecation banner is always appropriate here.
-  const deprecationNotice = () => (
-    <RoutingDeprecationNotice title="We're deprecating rule-based routing.">
-      You can still use it until September 1, 2026, but we recommend migrating to default or custom
-      routing.
-    </RoutingDeprecationNotice>
-  );
+  // Deprecation banner removed in this fork.
+  const deprecationNotice = () => null;
 
   const content = () => (
     <>
