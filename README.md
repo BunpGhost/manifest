@@ -27,7 +27,7 @@ Complexity-based routing is essential for our setup, and this fork ensures it co
 | `max_tokens` scoring removed | `scoring/dimensions/contextual-dimensions.ts` + `scoring/index.ts` | Removed `maxTokens` from `scoreExpectedOutputLength()` — `max_tokens` is not a content signal; was inflating scores due to Hermes' `reasoning_effort: xhigh` |
 | 50K context override removed | Manifest admin config | Removed `max_tokens` override so providers use native context limits |
 
-**Latest commit:** `86faebc37`  
+**Latest commit:** `2decdae7d`
 
 ## Setup notes
 
