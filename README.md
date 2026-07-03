@@ -13,6 +13,7 @@ Complexity-based routing is essential for our setup, and this fork ensures it co
 - **Always-visible complexity toggle** — the `legacyComplexityVisible()` gate is removed so the toggle is never hidden.
 - **Tier breakdown chart** — visual pie/bar chart in the Global Overview showing tier distribution (simple/standard/complex/reasoning).
 - **50K context override removed** — upstream hardcoded a 50K context limit; removed to allow full provider context windows (e.g. 1M for DeepSeek V4).
+- **`max_tokens` scoring removed** — `max_tokens` is a technical infra parameter, not a content signal. Removed from `scoreExpectedOutputLength()` so Hermes' `reasoning_effort: xhigh` (sending `max_tokens:65536`) no longer inflates every request score.
 
 ## What was changed
 
@@ -23,9 +24,10 @@ Complexity-based routing is essential for our setup, and this fork ensures it co
 | Deprecation banner removed | `components/RoutingDeprecationNotice.tsx` + `RoutingDefaultTierSection.tsx` + `RoutingSpecificitySection.tsx` | Empty component, removed all rendering call sites |
 | Toggle always visible | `pages/Routing.tsx` | `showComplexityToggle={() => true}` |
 | Tier breakdown chart | `components/GlobalOverview.tsx` | Pie/bar chart in Global Overview showing tier distribution |
+| `max_tokens` scoring removed | `scoring/dimensions/contextual-dimensions.ts` + `scoring/index.ts` | Removed `maxTokens` from `scoreExpectedOutputLength()` — `max_tokens` is not a content signal; was inflating scores due to Hermes' `reasoning_effort: xhigh` |
 | 50K context override removed | Manifest admin config | Removed `max_tokens` override so providers use native context limits |
 
-**Latest commit:** `cd2160a90`
+**Latest commit:** `45e73ba2c`
 
 ## Setup notes
 

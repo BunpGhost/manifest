@@ -94,7 +94,6 @@ function emptyDimensions(config: ScorerConfig): DimensionScore[] {
 
 interface StructuralDimContext {
   combined: string;
-  maxTokens?: number;
   tools?: ScorerInput['tools'];
   toolChoice?: unknown;
   conversationCount: number;
@@ -108,7 +107,7 @@ const STRUCTURAL_SCORERS = new Map<string, StructuralScorer>([
   ['conditionalLogic', (ctx) => scoreConditionalLogic(ctx.combined)],
   ['codeToProse', (ctx) => scoreCodeToProse(ctx.combined)],
   ['constraintDensity', (ctx) => scoreConstraintDensity(ctx.combined)],
-  ['expectedOutputLength', (ctx) => scoreExpectedOutputLength(ctx.combined, ctx.maxTokens)],
+  ['expectedOutputLength', (ctx) => scoreExpectedOutputLength(ctx.combined)],
   ['repetitionRequests', (ctx) => scoreRepetitionRequests(ctx.combined)],
   ['toolCount', (ctx) => scoreToolCount(ctx.tools, ctx.toolChoice)],
   ['conversationDepth', (ctx) => scoreConversationDepth(ctx.conversationCount)],
@@ -164,7 +163,7 @@ export function scoreRequest(
   momentum?: MomentumInput,
 ): ScoringResult {
   const config = mergeConfig(configOverride);
-  const { messages, tools, tool_choice, max_tokens } = input;
+  const { messages, tools, tool_choice } = input;
 
   if (!messages || messages.length === 0) {
     return {
@@ -221,7 +220,6 @@ export function scoreRequest(
   const conversationCount = countConversationMessages(messages);
   const ctx: StructuralDimContext = {
     combined,
-    maxTokens: max_tokens,
     tools,
     toolChoice: tool_choice,
     conversationCount,
