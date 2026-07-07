@@ -397,3 +397,75 @@ describe('scoreRequest — fixture expectations', () => {
     });
   }
 });
+
+describe('scoreRequest — bilingual (EN+PT) integration', () => {
+  it('routes PT-PT code generation correctly in bilingual mode', () => {
+    const result = scoreRequest(
+      {
+        messages: [{ role: 'user', content: 'Cria uma função que ordena arrays em Python' }],
+      },
+      { language: 'bilingual' },
+    );
+    expect(result.tier).not.toBe('simple');
+  });
+
+  it('routes EN code generation correctly in bilingual mode', () => {
+    const result = scoreRequest(
+      {
+        messages: [
+          { role: 'user', content: 'Write a React component with loading states and pagination' },
+        ],
+      },
+      { language: 'bilingual' },
+    );
+    expect(result.tier).not.toBe('simple');
+  });
+
+  it('routes mixed PT+EN technical prompt correctly in bilingual mode', () => {
+    const result = scoreRequest(
+      {
+        messages: [
+          {
+            role: 'user',
+            content:
+              'Analisar trade-offs entre microservices — compare latency, throughput, and custo',
+          },
+        ],
+      },
+      { language: 'bilingual' },
+    );
+    expect(['complex', 'standard']).toContain(result.tier);
+  });
+
+  it('routes simple PT greeting in bilingual mode as SIMPLE', () => {
+    const result = scoreRequest(
+      {
+        messages: [{ role: 'user', content: 'olá' }],
+      },
+      { language: 'bilingual' },
+    );
+    expect(result.tier).toBe('simple');
+  });
+
+  it('routes simple EN greeting in bilingual mode as SIMPLE', () => {
+    const result = scoreRequest(
+      {
+        messages: [{ role: 'user', content: 'hello' }],
+      },
+      { language: 'bilingual' },
+    );
+    expect(result.tier).toBe('simple');
+  });
+
+  it('routes PT code review request correctly in bilingual mode', () => {
+    const result = scoreRequest(
+      {
+        messages: [
+          { role: 'user', content: 'Corrigir bug no código de autenticação com erro de exceção' },
+        ],
+      },
+      { language: 'bilingual' },
+    );
+    expect(result.tier).not.toBe('simple');
+  });
+});
