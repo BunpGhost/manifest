@@ -20,6 +20,7 @@ Complexity-based routing is essential for our setup, and this fork ensures it co
 | Patch | File(s) | Description |
 |-------|------|-------------|
 | PT-PT multilingual keywords | `scoring/` | Portuguese scoring patterns for accurate complexity classification in PT-PT |
+| Bilingual EN+PT mode | `scoring/keywords/complexity.ts` | Merge EN + PT keywords so both languages are scored simultaneously — set `MANIFEST_LANGUAGE=bilingual` |
 | Envelope peeler | `scoring/envelope-peeler.ts` | `stripTrailingContext()` strips Hermes context from end of messages before scoring |
 | Deprecation banner removed | `components/RoutingDeprecationNotice.tsx` + `RoutingDefaultTierSection.tsx` + `RoutingSpecificitySection.tsx` | Empty component, removed all rendering call sites |
 | Toggle always visible | `pages/Routing.tsx` | `showComplexityToggle={() => true}` |
@@ -27,11 +28,12 @@ Complexity-based routing is essential for our setup, and this fork ensures it co
 | `max_tokens` scoring removed | `scoring/dimensions/contextual-dimensions.ts` + `scoring/index.ts` | Removed `maxTokens` from `scoreExpectedOutputLength()` — `max_tokens` is not a content signal; was inflating scores due to Hermes' `reasoning_effort: xhigh` |
 | 50K context override removed | Manifest admin config | Removed `max_tokens` override so providers use native context limits |
 
-**Latest commit:** `2decdae7d`
+**Latest commit:** `478b8e0e4`
 
 ## Setup notes
 
 - **Provider:** OpenCode Go subscription — DeepSeek V4 Flash (simple/standard), DeepSeek V4 Pro (complex/reasoning)
+- **Language:** `MANIFEST_LANGUAGE=bilingual` — EN + PT keywords merged for mixed-language scoring
 - **SEED_DATA:** disabled (`SEED_DATA=false`) — clean DB, only production data
 - **API keys:** separate keys per Hermes agent profile (Cló, Tikita, Finus, Fri)
 - **Database:** PostgreSQL, schema managed via Manifest migrations
