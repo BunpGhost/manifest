@@ -231,9 +231,15 @@ describe('getSubscriptionProviderConfig', () => {
     });
   });
 
-  it('does not publish a hardcoded known-models list for xai', () => {
+  it('publishes the curated xai subscription models', () => {
     const config = getSubscriptionProviderConfig('xai');
-    expect(config?.knownModels).toBeUndefined();
+    expect(config?.knownModels).toEqual([
+      'grok-4.5',
+      'grok-4.3',
+      'grok-4.20-0309-reasoning',
+      'grok-4.20-0309-non-reasoning',
+      'grok-build-0.1',
+    ]);
   });
 
   it('returns config for gemini', () => {
@@ -257,7 +263,7 @@ describe('getSubscriptionProviderConfig', () => {
     );
     expect(config?.subscriptionCapabilities).toMatchObject({
       maxContextWindow: 1000000,
-      supportsPromptCaching: false,
+      supportsPromptCaching: true,
       supportsBatching: false,
     });
   });
@@ -318,6 +324,18 @@ describe('getSubscriptionKnownModels', () => {
     expect(models).toContain('claude-fable-5');
     expect(models).toContain('claude-opus-4');
     expect(models).toContain('claude-sonnet-4');
+    // claude-sonnet-5 (launched 2026-06-30) is served on the Claude plan.
+    expect(models).toContain('claude-sonnet-5');
+  });
+
+  it('returns the curated ChatGPT plan models for OpenAI', () => {
+    const models = getSubscriptionKnownModels('openai');
+    expect(models).toEqual(
+      expect.arrayContaining(['gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna']),
+    );
+    expect(models).not.toContain('gpt-5.6-sol-pro');
+    expect(models).not.toContain('gpt-5.6-terra-pro');
+    expect(models).not.toContain('gpt-5.6-luna-pro');
   });
 
   it('returns known models for copilot', () => {
@@ -398,8 +416,15 @@ describe('getSubscriptionKnownModels', () => {
     expect(models).toContain('gemini-2.5-flash-lite');
   });
 
-  it('returns null for xai (dynamic provider discovery, no hardcoded list)', () => {
-    expect(getSubscriptionKnownModels('xai')).toBeNull();
+  it('returns known models for xai', () => {
+    const models = getSubscriptionKnownModels('xai');
+    expect(models).toEqual([
+      'grok-4.5',
+      'grok-4.3',
+      'grok-4.20-0309-reasoning',
+      'grok-4.20-0309-non-reasoning',
+      'grok-build-0.1',
+    ]);
   });
 
   it('returns null for unsupported providers', () => {
@@ -454,8 +479,10 @@ describe('getSubscriptionKnownModelsMatch', () => {
 });
 
 describe('getSubscriptionExcludedModels', () => {
-  it('returns the -fast exclusion for anthropic', () => {
-    expect(getSubscriptionExcludedModels('anthropic')).toEqual(['-fast']);
+  it('returns the -fast and retired-snapshot exclusions for anthropic', () => {
+    // `-20250514` blocks the claude-{sonnet,opus}-4-20250514 snapshots
+    // retired on 2026-06-15 if the pricing cache still surfaces them.
+    expect(getSubscriptionExcludedModels('anthropic')).toEqual(['-fast', '-20250514']);
   });
 
   it('returns an empty array for providers with no exclusion configured', () => {
@@ -472,7 +499,31 @@ describe('getSubscriptionCapabilities', () => {
     const caps = getSubscriptionCapabilities('anthropic');
     expect(caps).toMatchObject({
       maxContextWindow: 200000,
-      supportsPromptCaching: false,
+      supportsPromptCaching: true,
+      supportsBatching: false,
+    });
+    expect(caps?.modelContextWindows?.['claude-opus-4-8']).toBe(1000000);
+  });
+
+  it('returns capabilities for OpenAI subscription', () => {
+    const caps = getSubscriptionCapabilities('openai');
+    expect(caps).toMatchObject({
+      maxContextWindow: 200000,
+      supportsPromptCaching: true,
+      supportsBatching: false,
+    });
+    expect(caps?.modelContextWindows).toMatchObject({
+      'gpt-5.6-sol': 1050000,
+      'gpt-5.6-terra': 1050000,
+      'gpt-5.6-luna': 1050000,
+    });
+  });
+
+  it('returns capabilities for MiniMax Coding Plan', () => {
+    const caps = getSubscriptionCapabilities('minimax');
+    expect(caps).toMatchObject({
+      maxContextWindow: 1000000,
+      supportsPromptCaching: true,
       supportsBatching: false,
     });
   });
@@ -509,7 +560,7 @@ describe('getSubscriptionCapabilities', () => {
     const caps = getSubscriptionCapabilities('zai');
     expect(caps).toMatchObject({
       maxContextWindow: 204800,
-      supportsPromptCaching: false,
+      supportsPromptCaching: true,
       supportsBatching: false,
     });
   });
@@ -518,7 +569,7 @@ describe('getSubscriptionCapabilities', () => {
     const caps = getSubscriptionCapabilities('moonshot');
     expect(caps).toMatchObject({
       maxContextWindow: 262144,
-      supportsPromptCaching: false,
+      supportsPromptCaching: true,
       supportsBatching: false,
     });
   });
@@ -527,7 +578,7 @@ describe('getSubscriptionCapabilities', () => {
     const caps = getSubscriptionCapabilities('qwen');
     expect(caps).toMatchObject({
       maxContextWindow: 991000,
-      supportsPromptCaching: false,
+      supportsPromptCaching: true,
       supportsBatching: false,
     });
   });
@@ -536,7 +587,7 @@ describe('getSubscriptionCapabilities', () => {
     const caps = getSubscriptionCapabilities('mistral');
     expect(caps).toMatchObject({
       maxContextWindow: 200000,
-      supportsPromptCaching: false,
+      supportsPromptCaching: true,
       supportsBatching: false,
     });
   });
@@ -545,7 +596,7 @@ describe('getSubscriptionCapabilities', () => {
     const caps = getSubscriptionCapabilities('xiaomi');
     expect(caps).toMatchObject({
       maxContextWindow: 1048576,
-      supportsPromptCaching: false,
+      supportsPromptCaching: true,
       supportsBatching: false,
     });
   });
@@ -554,7 +605,16 @@ describe('getSubscriptionCapabilities', () => {
     const caps = getSubscriptionCapabilities('xai');
     expect(caps).toMatchObject({
       maxContextWindow: 128000,
-      supportsPromptCaching: false,
+      supportsPromptCaching: true,
+      supportsBatching: false,
+    });
+  });
+
+  it('returns capabilities for Gemini subscription', () => {
+    const caps = getSubscriptionCapabilities('gemini');
+    expect(caps).toMatchObject({
+      maxContextWindow: 1000000,
+      supportsPromptCaching: true,
       supportsBatching: false,
     });
   });

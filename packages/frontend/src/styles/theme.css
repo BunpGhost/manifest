@@ -75,6 +75,8 @@
     /* Success (emerald accent for our dashboard) */
     --success: 178 75% 44%;
     --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
   }
 
   .dark {
@@ -92,7 +94,7 @@
     --muted-foreground: 0 0% 55%;
     --accent: 0 0% 15%;
     --accent-foreground: 0 0% 93%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 80% 62%;
     --destructive-foreground: 0 0% 93%;
     --border: 0 0% 18%;
     --input: 0 0% 18%;
@@ -115,6 +117,8 @@
 
     --success: 178 70% 50%;
     --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
   }
 }
 
@@ -846,6 +850,12 @@ h6 {
   align-items: center;
   justify-content: space-between;
   margin: var(--gap-md) 0.5rem 1px;
+  border-radius: var(--radius);
+  transition: background var(--transition-fast);
+}
+
+.sidebar__section-header:hover {
+  background: hsl(var(--sidebar-accent));
 }
 
 /* Collapse toggle: carries the uppercased section label styling so it reads as
@@ -870,9 +880,12 @@ h6 {
   transition: background var(--transition-fast);
 }
 
-.sidebar__section-caret:hover,
 .sidebar__section-caret:focus-visible {
   background: hsl(var(--sidebar-accent));
+  color: hsl(var(--sidebar-foreground));
+}
+
+.sidebar__section-header:hover .sidebar__section-caret {
   color: hsl(var(--sidebar-foreground));
 }
 
@@ -882,10 +895,11 @@ h6 {
   justify-content: center;
   width: 22px;
   height: 22px;
-  background: hsl(var(--muted));
+  background: transparent;
   border: none;
   border-radius: var(--radius-sm);
   padding: 0;
+  margin-right: 2px;
   color: hsl(var(--muted-foreground));
   cursor: pointer;
   transition:
@@ -1141,7 +1155,7 @@ h6 {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 100;
   background: rgb(0 0 0 / 0.5);
   display: flex;
   align-items: center;
