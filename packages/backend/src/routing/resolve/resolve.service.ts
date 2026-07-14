@@ -111,6 +111,11 @@ export class ResolveService {
     const momentum: MomentumInput | undefined =
       recentTiers && recentTiers.length > 0 ? { recentTiers } : undefined;
 
+    const configOverride: Partial<ScorerConfig> | undefined =
+      process.env.MANIFEST_LANGUAGE
+        ? { language: process.env.MANIFEST_LANGUAGE }
+        : undefined;
+
     const result = scoreRequest(input, configOverride, momentum);
 
     const tiers = await this.tierService.getTiers(agentId);
