@@ -2,8 +2,13 @@
  * Complexity-scoring keywords. Each dimension maps to a weight in
  * `scoring/config.ts` — keywords push a message toward a higher (or lower)
  * complexity tier when matched.
+ *
+ * Supports multiple languages. Use getComplexityKeywords(language) to retrieve
+ * the correct set for the configured language.
  */
-export const COMPLEXITY_KEYWORDS: Record<string, string[]> = {
+import { PT_COMPLEXITY_KEYWORDS } from './complexity-pt';
+
+export const COMPLEXITY_KEYWORDS_EN: Record<string, string[]> = {
   formalLogic: [
     'prove',
     'proof',
@@ -400,3 +405,45 @@ export const COMPLEXITY_KEYWORDS: Record<string, string[]> = {
     'mark as read',
   ],
 };
+
+/**
+ * Merge two keyword sets per dimension, unioning arrays with case-insensitive
+ * deduplication. Used by the 'bilingual' mode to combine EN and PT keywords.
+ */
+function mergeKeywordSets(
+  a: Record<string, string[]>,
+  b: Record<string, string[]>,
+): Record<string, string[]> {
+  const allDims = [...new Set([...Object.keys(a), ...Object.keys(b)])];
+  const merged: Record<string, string[]> = {};
+  for (const dim of allDims) {
+    const setA = a[dim] ?? [];
+    const setB = b[dim] ?? [];
+    const seen = new Set<string>();
+    merged[dim] = [...setA, ...setB].filter((k) => {
+      const lower = k.toLowerCase();
+      if (seen.has(lower)) return false;
+      seen.add(lower);
+      return true;
+    });
+  }
+  return merged;
+}
+
+/**
+ * All available complexity keyword sets, indexed by language code.
+ * Defaults to English if the language is not found.
+ */
+export const COMPLEXITY_KEYWORDS: Record<string, Record<string, string[]>> = {
+  en: COMPLEXITY_KEYWORDS_EN,
+  pt: PT_COMPLEXITY_KEYWORDS,
+  bilingual: mergeKeywordSets(COMPLEXITY_KEYWORDS_EN, PT_COMPLEXITY_KEYWORDS),
+};
+
+/**
+ * Get complexity keywords for the specified language.
+ * Falls back to English if the language is not supported.
+ */
+export function getComplexityKeywords(language: string = 'en'): Record<string, string[]> {
+  return COMPLEXITY_KEYWORDS[language] || COMPLEXITY_KEYWORDS.en;
+}

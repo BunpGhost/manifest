@@ -14,17 +14,10 @@ describe('scoreExpectedOutputLength', () => {
     expect(scoreExpectedOutputLength('write a comprehensive guide')).toBeGreaterThan(0);
   });
 
-  it('boosts score with high max_tokens', () => {
-    const withoutTokens = scoreExpectedOutputLength('some text');
-    const withTokens = scoreExpectedOutputLength('some text', 8500);
-    expect(withTokens).toBeGreaterThan(withoutTokens);
-  });
-
   it('caps at 0.9', () => {
     expect(
       scoreExpectedOutputLength(
         'write a comprehensive, detailed, thorough, exhaustive guide',
-        10000,
       ),
     ).toBeLessThanOrEqual(0.9);
   });
@@ -33,17 +26,6 @@ describe('scoreExpectedOutputLength', () => {
     expect(scoreExpectedOutputLength('write a comprehensive, detailed report')).toBe(0.6);
   });
 
-  it('adds 0.2 for max_tokens between 4001 and 8000', () => {
-    const without = scoreExpectedOutputLength('some text');
-    const with5k = scoreExpectedOutputLength('some text', 5000);
-    expect(with5k - without).toBeCloseTo(0.2);
-  });
-
-  it('does not boost for max_tokens <= 4000', () => {
-    const without = scoreExpectedOutputLength('some text');
-    const with3k = scoreExpectedOutputLength('some text', 3000);
-    expect(with3k).toBe(without);
-  });
 });
 
 describe('scoreRepetitionRequests', () => {

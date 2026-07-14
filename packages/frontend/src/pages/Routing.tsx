@@ -752,7 +752,7 @@ const Routing: Component = () => {
                     complexityEnabled={complexityEnabled}
                     togglingComplexity={togglingComplexity}
                     onToggleComplexity={handleToggleComplexity}
-                    showComplexityToggle={legacyComplexityVisible}
+                    showComplexityToggle={() => true}
                     responseMode={defaultResponseMode}
                     changingResponseMode={changingDefaultResponseMode}
                     onResponseModeChange={handleDefaultResponseModeChange}
@@ -929,6 +929,7 @@ const Routing: Component = () => {
         onAddFallback={handleAddFallback}
         onProviderUpdate={handleProviderUpdate}
         onProviderPoll={handleProviderPoll}
+        onOpenProviderModal={openProviderModal}
       />
 
       <SetupModal

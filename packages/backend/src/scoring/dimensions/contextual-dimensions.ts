@@ -12,7 +12,7 @@ const LENGTH_SIGNALS = [
   'cover all',
 ];
 
-export function scoreExpectedOutputLength(text: string, maxTokens?: number): number {
+export function scoreExpectedOutputLength(text: string): number {
   const lower = text.toLowerCase();
   let signalCount = 0;
 
@@ -23,11 +23,6 @@ export function scoreExpectedOutputLength(text: string, maxTokens?: number): num
   let score = 0;
   if (signalCount === 1) score = 0.3;
   else if (signalCount >= 2) score = 0.6;
-
-  if (maxTokens !== undefined) {
-    if (maxTokens > 8000) score += 0.3;
-    else if (maxTokens > 4000) score += 0.2;
-  }
 
   return Math.min(0.9, score);
 }

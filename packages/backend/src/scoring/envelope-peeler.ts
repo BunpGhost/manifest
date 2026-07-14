@@ -30,10 +30,21 @@ const STRUCTURED_LANGUAGES = new Set(['json', 'jsonl', 'yaml', 'yml', 'toml', 'x
  * Returns the human portion of a wrapped user message, or the original
  * text unchanged when no envelope is detected.
  */
+const HERMES_TRAILING_REGEX =
+  /(\r?\n){2,}(?:\s*)?(?:\[System note:[\s\S]*?\]|<memory-context[\s\S]*?>[\s\S]*?<\/memory-context>)\s*$/;
+
+export function stripTrailingContext(text: string): string {
+  if (text.length === 0) return text;
+  const match = text.match(HERMES_TRAILING_REGEX);
+  if (!match || match.index === undefined || match.index === 0) return text;
+  const before = text.slice(0, match.index).trim();
+  return before.length > 0 ? before : text;
+}
+
 export function peelEnvelope(text: string): string {
   if (text.length === 0) return text;
 
-  let working = text;
+  let working = stripTrailingContext(text);
   const headerMatch = working.match(ENVELOPE_HEADER_REGEX);
   if (headerMatch) {
     working = working.slice(headerMatch[0].length);
@@ -43,7 +54,7 @@ export function peelEnvelope(text: string): string {
   const fenceMatch = trimmed.match(FENCE_LANGUAGE_REGEX);
   if (!fenceMatch) {
     // Header without a fenced block isn't a recognizable envelope shape.
-    return text;
+    return working;
   }
 
   const language = fenceMatch[1].toLowerCase();
@@ -52,7 +63,7 @@ export function peelEnvelope(text: string): string {
   if (!isStructured) {
     // A code fence wrapping actual code is the legitimate "user pasted code"
     // case. Leave it for the scorer to see.
-    return text;
+    return working;
   }
 
   const afterFence = trimmed.slice(fenceMatch[0].length);
@@ -60,7 +71,7 @@ export function peelEnvelope(text: string): string {
   if (trailing.length === 0) {
     // No human prompt after the envelope — keep the original so the scorer
     // can still see what arrived.
-    return text;
+    return working;
   }
 
   return trailing;

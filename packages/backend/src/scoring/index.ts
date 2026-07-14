@@ -29,7 +29,7 @@ import {
 } from './dimensions';
 import { applyMomentum, MomentumInput } from './momentum';
 import { computeConfidence, scoreToTier } from './sigmoid';
-import { checkFormalLogicOverride, estimateTotalTokens } from './overrides';
+import { checkFormalLogicOverride } from './overrides';
 
 export type {
   ScorerInput,
@@ -62,6 +62,12 @@ function buildTrie(config: ScorerConfig): KeywordTrie {
 
 function mergeConfig(partial?: Partial<ScorerConfig>): ScorerConfig {
   if (!partial) return DEFAULT_CONFIG;
+  // If language is specified, rebuild dimensions with localized keywords
+  if (partial.language && partial.language !== DEFAULT_CONFIG.language) {
+    const { buildConfig } = require('./config');
+    const langConfig = buildConfig(partial.language);
+    return { ...langConfig, ...partial, dimensions: langConfig.dimensions };
+  }
   return { ...DEFAULT_CONFIG, ...partial };
 }
 
@@ -88,7 +94,6 @@ function emptyDimensions(config: ScorerConfig): DimensionScore[] {
 
 interface StructuralDimContext {
   combined: string;
-  maxTokens?: number;
   tools?: ScorerInput['tools'];
   toolChoice?: unknown;
   conversationCount: number;
@@ -102,7 +107,7 @@ const STRUCTURAL_SCORERS = new Map<string, StructuralScorer>([
   ['conditionalLogic', (ctx) => scoreConditionalLogic(ctx.combined)],
   ['codeToProse', (ctx) => scoreCodeToProse(ctx.combined)],
   ['constraintDensity', (ctx) => scoreConstraintDensity(ctx.combined)],
-  ['expectedOutputLength', (ctx) => scoreExpectedOutputLength(ctx.combined, ctx.maxTokens)],
+  ['expectedOutputLength', (ctx) => scoreExpectedOutputLength(ctx.combined)],
   ['repetitionRequests', (ctx) => scoreRepetitionRequests(ctx.combined)],
   ['toolCount', (ctx) => scoreToolCount(ctx.tools, ctx.toolChoice)],
   ['conversationDepth', (ctx) => scoreConversationDepth(ctx.conversationCount)],
@@ -158,7 +163,7 @@ export function scoreRequest(
   momentum?: MomentumInput,
 ): ScoringResult {
   const config = mergeConfig(configOverride);
-  const { messages, tools, tool_choice, max_tokens } = input;
+  const { messages, tools, tool_choice } = input;
 
   if (!messages || messages.length === 0) {
     return {
@@ -215,7 +220,6 @@ export function scoreRequest(
   const conversationCount = countConversationMessages(messages);
   const ctx: StructuralDimContext = {
     combined,
-    maxTokens: max_tokens,
     tools,
     toolChoice: tool_choice,
     conversationCount,
@@ -268,14 +272,6 @@ function applyTierFloors(
     if (floored !== tier) {
       tier = floored;
       reason = 'tool_detected';
-    }
-  }
-
-  if (estimateTotalTokens(messages) > 50_000) {
-    const floored = maxTier(tier, 'complex');
-    if (floored !== tier) {
-      tier = floored;
-      reason = 'large_context';
     }
   }
 
