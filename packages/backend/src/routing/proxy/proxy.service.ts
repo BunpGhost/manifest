@@ -270,6 +270,19 @@ export class ProxyService {
       `Proxy: tier=${resolved.tier} model=${primaryModel} provider=${route.provider} auth_type=${route.authType} confidence=${resolved.confidence}`,
     );
 
+    if (process.env['MANIFEST_LOG_REQUEST_BODY'] === 'true') {
+      const msgs = (body as Record<string, unknown>)?.messages as Array<Record<string, unknown>> | undefined;
+      if (msgs) {
+        for (let i = msgs.length - 1; i >= 0; i--) {
+          if (msgs[i]?.role === 'user' && msgs[i]?.content) {
+            const snippet = String(msgs[i].content).slice(0, 500);
+            this.logger.log(`[BODY] agent=${agentName} tier=${resolved.tier} confidence=${resolved.confidence} msg="${snippet}"`);
+            break;
+          }
+        }
+      }
+    }
+
     const signatureLookup = (toolCallId: string) =>
       this.signatureCache.retrieve(sessionKey, toolCallId);
     const thinkingLookup: ThinkingBlockLookup = (firstToolUseId, routeContext) =>

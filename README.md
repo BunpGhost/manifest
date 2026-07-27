@@ -27,8 +27,9 @@ Complexity-based routing is essential for our setup, and this fork ensures it co
 | Tier breakdown chart | `components/GlobalOverview.tsx` | Pie/bar chart in Global Overview showing tier distribution |
 | `max_tokens` scoring removed | `scoring/dimensions/contextual-dimensions.ts` + `scoring/index.ts` | Removed `maxTokens` from `scoreExpectedOutputLength()` — `max_tokens` is not a content signal; was inflating scores due to Hermes' `reasoning_effort: xhigh` |
 | 50K context override removed | Manifest admin config | Removed `max_tokens` override so providers use native context limits |
+| Request body logging | `routing/proxy/proxy.service.ts` + `.env` | Logs the user message content alongside the assigned tier when `MANIFEST_LOG_REQUEST_BODY=true` — used to validate tiering quality against real prompts |
 
-**Latest commit:** `478b8e0e4`
+**Latest commit:** `d3558142c`
 
 ## Setup notes
 
@@ -36,6 +37,7 @@ Complexity-based routing is essential for our setup, and this fork ensures it co
 - **Language:** `MANIFEST_LANGUAGE=bilingual` — EN + PT keywords merged for mixed-language scoring
 - **SEED_DATA:** disabled (`SEED_DATA=false`) — clean DB, only production data
 - **API keys:** separate keys per Hermes agent profile (Cló, Tikita, Finus, Fri)
+- **Request body logging:** `MANIFEST_LOG_REQUEST_BODY=true` — logs each request's user message (first 500 chars) with its assigned tier. View via `journalctl -u manifest | grep '[BODY]'`
 - **Database:** PostgreSQL, schema managed via Manifest migrations
 
 ## Upstream
