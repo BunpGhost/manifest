@@ -1,3 +1,5 @@
+import { scrubSecrets } from '../../common/utils/secret-scrub';
+
 const KNOWN_ERROR_MESSAGES: Record<number, string> = {
   400: 'Bad request to upstream provider',
   401: 'Authentication failed with upstream provider',
@@ -26,6 +28,13 @@ export interface ClassifiedProviderError {
   source: 'provider';
 }
 
+export interface StructuredProviderError {
+  message: string;
+  type: string | null;
+  param: string | null;
+  code: string | null;
+}
+
 const KNOWN_CONTEXT_ERROR_CODES = new Set(['context_length_exceeded']);
 
 const KNOWN_CONTEXT_ERROR_MESSAGE_PATTERNS = [
@@ -34,11 +43,21 @@ const KNOWN_CONTEXT_ERROR_MESSAGE_PATTERNS = [
 ];
 
 function sanitizeSensitivePatterns(msg: string): string {
-  return msg
-    .replace(/sk-ant-[a-zA-Z0-9_-]{20,}/g, 'sk-ant-***')
-    .replace(/sk-[a-zA-Z0-9_-]{20,}/g, 'sk-***')
-    .replace(/key=[^&\s"]+/g, 'key=***')
-    .replace(/Bearer\s+[^\s"]+/gi, 'Bearer ***');
+  return scrubSecrets(
+    msg.replace(/Bearer\s+(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[^\s"']+)/gi, 'Bearer [REDACTED]'),
+  )
+    .replace(
+      /\\"(api[_-]?key|key)\\"(\s*:\s*)\\"(?:\\\\"|[^"\\]|\\(?!"))*\\"/gi,
+      '\\"$1\\"$2\\"[REDACTED]\\"',
+    )
+    .replace(/"(api[_-]?key|key)"(\s*:\s*)"(?:\\.|[^"\\])*"/gi, '"$1"$2"[REDACTED]"')
+    .replace(/'(api[_-]?key|key)'(\s*:\s*)'(?:\\.|[^'\\])*'/gi, "'$1'$2'[REDACTED]'")
+    .replace(/\b(api[_-]?key)\b(\s*[:=]\s*)"(?:\\.|[^"\\])*"/gi, '$1$2"[REDACTED]"')
+    .replace(/\b(api[_-]?key)\b(\s*[:=]\s*)'(?:\\.|[^'\\])*'/gi, "$1$2'[REDACTED]'")
+    .replace(/\b(api[_-]?key)\b(\s*[:=]\s*)[^\s"',}&]+/gi, '$1$2[REDACTED]')
+    .replace(/\b(key)\b(\s*=\s*)"(?:\\.|[^"\\])*"/gi, '$1$2"[REDACTED]"')
+    .replace(/\b(key)\b(\s*=\s*)'(?:\\.|[^'\\])*'/gi, "$1$2'[REDACTED]'")
+    .replace(/\b(key)\b(\s*=\s*)[^\s"',}&]+/gi, '$1$2[REDACTED]');
 }
 
 function normalizeErrorMessage(message: string): string {
@@ -54,6 +73,70 @@ function extractProviderMessage(rawBody: string): string | null {
   } catch {
     return null;
   }
+}
+
+function errorField(value: unknown): string | null {
+  if (typeof value !== 'string' || value.length === 0) return null;
+  const normalized = normalizeErrorMessage(value);
+  return normalized.length > 0 ? normalized : null;
+}
+
+/**
+ * Extract the allow-listed fields from a structured provider 4xx response.
+ * Server errors and unstructured bodies keep the generic production message.
+ */
+export function parseStructuredProviderError(
+  status: number,
+  rawBody: string,
+): StructuredProviderError | null {
+  if (status < 400 || status >= 500) return null;
+
+  try {
+    const parsed = JSON.parse(rawBody) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    const root = parsed as Record<string, unknown>;
+    const nested = root.error;
+    const error =
+      nested && typeof nested === 'object' && !Array.isArray(nested)
+        ? (nested as Record<string, unknown>)
+        : root;
+    const message = errorField(error.message ?? root.message);
+    if (!message) return null;
+
+    return {
+      message,
+      type: errorField(error.type),
+      param: errorField(error.param),
+      code: errorField(error.code),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function isHtmlErrorBody(rawBody: string): boolean {
+  let offset = 0;
+  while (offset < rawBody.length) {
+    while (/\s/.test(rawBody.charAt(offset))) offset += 1;
+    if (!rawBody.startsWith('<!--', offset)) break;
+
+    const commentEnd = rawBody.indexOf('-->', offset + 4);
+    if (commentEnd === -1) return false;
+    offset = commentEnd + 3;
+  }
+
+  return /^(?:<!doctype\s+html|<html)\b/i.test(rawBody.slice(offset));
+}
+
+function htmlEndpointError(status: number | null | undefined, rawBody: string): string | null {
+  if (!isHtmlErrorBody(rawBody)) return null;
+  const ngrokCode = rawBody.match(/\bERR_NGROK_\d+\b/i)?.[0]?.toUpperCase();
+  if (ngrokCode && /\bendpoint\b[\s\S]{0,300}\bis offline\b/i.test(rawBody)) {
+    return `Tunnel endpoint is offline (${ngrokCode})`;
+  }
+  return status == null
+    ? 'Upstream endpoint returned an HTML error page'
+    : `Upstream endpoint returned HTTP ${status}`;
 }
 
 function extractProviderErrorCode(rawBody: string): string | null {
@@ -107,10 +190,14 @@ export function classifyProviderError(
 
 export function sanitizeProviderError(status: number, rawBody: string, nodeEnv?: string): string {
   const generic = KNOWN_ERROR_MESSAGES[status] ?? `Upstream provider returned HTTP ${status}`;
+  const endpointError = htmlEndpointError(status, rawBody);
+  if (endpointError) return endpointError;
   const classified = classifyProviderError(status, rawBody);
   if (classified) return classified.message;
+  const structured = parseStructuredProviderError(status, rawBody);
+  if (structured) return structured.message;
 
-  // In production, only return generic error messages to avoid leaking provider internals
+  // In production, unstructured and 5xx responses stay generic to avoid leaking internals.
   if ((nodeEnv ?? 'production') === 'production') return generic;
 
   const message = extractProviderMessage(rawBody);
@@ -119,4 +206,11 @@ export function sanitizeProviderError(status: number, rawBody: string, nodeEnv?:
   }
 
   return generic;
+}
+
+export function normalizeProviderErrorForStorage(
+  status: number | null | undefined,
+  rawBody: string,
+): string {
+  return htmlEndpointError(status, rawBody) ?? rawBody;
 }

@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AgentMessage } from '../entities/agent-message.entity';
+import { ManifestRequest } from '../entities/request.entity';
 import { Agent } from '../entities/agent.entity';
+import { InstallMetadata } from '../entities/install-metadata.entity';
 import { Tenant } from '../entities/tenant.entity';
 import { CustomProvider } from '../entities/custom-provider.entity';
 import { TenantProvider } from '../entities/tenant-provider.entity';
@@ -33,13 +35,21 @@ import { AgentsController } from './controllers/agents.controller';
 import { AgentAnalyticsController } from './controllers/agent-analytics.controller';
 import { ProviderAnalyticsController } from './controllers/provider-analytics.controller';
 import { ErrorsController } from './controllers/errors.controller';
+import { AttemptAnalyticsController } from './controllers/attempt-analytics.controller';
+import { AttemptStatsService } from './services/attempt-stats.service';
+import { AutofixAnalyticsController } from './controllers/autofix-analytics.controller';
+import { AutofixStatsService } from './services/autofix-stats.service';
+import { RequestVolumeService } from './services/request-volume.service';
 import { BillingModule } from '../billing/billing.module';
+import { AutofixModule } from '../routing/autofix/autofix.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       AgentMessage,
+      ManifestRequest,
       Agent,
+      InstallMetadata,
       Tenant,
       CustomProvider,
       TenantProvider,
@@ -53,6 +63,7 @@ import { BillingModule } from '../billing/billing.module';
     RoutingCoreModule,
     ModelPricesModule,
     BillingModule,
+    AutofixModule,
   ],
   controllers: [
     OverviewController,
@@ -64,6 +75,8 @@ import { BillingModule } from '../billing/billing.module';
     ProviderAnalyticsController,
     ProviderUsageController,
     ErrorsController,
+    AttemptAnalyticsController,
+    AutofixAnalyticsController,
   ],
   providers: [
     AggregationService,
@@ -77,6 +90,9 @@ import { BillingModule } from '../billing/billing.module';
     SpecificityFeedbackService,
     AgentAnalyticsService,
     ProviderUsageService,
+    AttemptStatsService,
+    AutofixStatsService,
+    RequestVolumeService,
   ],
   exports: [SpecificityFeedbackService, ProviderUsageService],
 })

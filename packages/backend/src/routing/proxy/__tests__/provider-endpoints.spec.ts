@@ -2,6 +2,7 @@ import { PROVIDER_REGISTRY } from '../../../common/constants/providers';
 import {
   buildCustomEndpoint,
   buildEndpointOverride,
+  resolveBedrockEndpointKey,
   resolveEndpointKey,
   PROVIDER_ENDPOINTS,
 } from '../provider-endpoints';
@@ -74,6 +75,8 @@ describe('resolveEndpointKey', () => {
     expect(resolveEndpointKey('deepseek')).toBe('deepseek');
     expect(resolveEndpointKey('commandcode')).toBe('commandcode');
     expect(resolveEndpointKey('fireworks')).toBe('fireworks');
+    expect(resolveEndpointKey('huggingface')).toBe('huggingface');
+    expect(resolveEndpointKey('gemini-free')).toBe('gemini-free');
     expect(resolveEndpointKey('nous')).toBe('nous');
     expect(resolveEndpointKey('nvidia')).toBe('nvidia');
     expect(resolveEndpointKey('ollama')).toBe('ollama');
@@ -99,6 +102,12 @@ describe('resolveEndpointKey', () => {
   it('resolves Fireworks AI aliases to fireworks', () => {
     expect(resolveEndpointKey('fireworks-ai')).toBe('fireworks');
     expect(resolveEndpointKey('fireworks ai')).toBe('fireworks');
+  });
+
+  it('resolves Hugging Face aliases to huggingface', () => {
+    expect(resolveEndpointKey('hugging-face')).toBe('huggingface');
+    expect(resolveEndpointKey('Hugging Face')).toBe('huggingface');
+    expect(resolveEndpointKey('hf')).toBe('huggingface');
   });
 
   it('resolves Command Code aliases to commandcode', () => {
@@ -159,6 +168,8 @@ describe('resolveEndpointKey', () => {
     expect(known).toContain('commandcode');
     expect(known).toContain('commandcode-anthropic');
     expect(known).toContain('fireworks');
+    expect(known).toContain('huggingface');
+    expect(known).toContain('gemini-free');
     expect(known).toContain('nous');
     expect(known).toContain('openrouter');
     expect(known).toContain('nvidia');
@@ -218,7 +229,50 @@ describe('resolveEndpointKey', () => {
   });
 });
 
+describe('resolveBedrockEndpointKey', () => {
+  it.each(['openai.gpt-5.6-luna', 'us.openai.gpt-5.6-luna', 'bedrock/openai.gpt-5.6-luna'])(
+    'routes %s through Responses',
+    (model) => {
+      expect(resolveBedrockEndpointKey(model)).toBe('bedrock-responses');
+    },
+  );
+
+  it.each(['anthropic.claude-sonnet-5', 'us.anthropic.claude-sonnet-5'])(
+    'routes %s through Messages',
+    (model) => {
+      expect(resolveBedrockEndpointKey(model)).toBe('bedrock-anthropic');
+    },
+  );
+
+  it('keeps other Bedrock model families on Chat Completions', () => {
+    expect(resolveBedrockEndpointKey('mistral.ministral-3-8b-instruct')).toBe('bedrock');
+  });
+});
+
 describe('PROVIDER_ENDPOINTS', () => {
+  it('routes Gemini Free through the configured LiteLLM gateway', () => {
+    process.env['CREDITS_BASE_URL'] = 'https://credits.test/';
+    const endpoint = PROVIDER_ENDPOINTS['gemini-free'];
+
+    expect(endpoint.baseUrl).toBe('https://credits.test');
+    expect(endpoint.buildPath('gemini/gemini-2.5-flash')).toBe('/v1/chat/completions');
+    expect(endpoint.buildHeaders('sk-virtual')).toEqual({
+      Authorization: 'Bearer sk-virtual',
+      'Content-Type': 'application/json',
+    });
+  });
+
+  it('huggingface uses the OpenAI-compatible Inference Providers endpoint', () => {
+    const endpoint = PROVIDER_ENDPOINTS['huggingface'];
+    expect(endpoint.baseUrl).toBe('https://router.huggingface.co');
+    expect(endpoint.buildPath('openai/gpt-oss-120b')).toBe('/v1/chat/completions');
+    expect(endpoint.buildHeaders('hf_test_token')).toEqual({
+      Authorization: 'Bearer hf_test_token',
+      'Content-Type': 'application/json',
+    });
+    expect(endpoint.streamUsageReporting).toBe('openai_stream_options');
+  });
+
   it('zai buildPath returns correct path', () => {
     const path = PROVIDER_ENDPOINTS['zai'].buildPath('test-model');
     expect(path).toBe('/api/paas/v4/chat/completions');
@@ -827,23 +881,24 @@ describe('gemini-subscription endpoint', () => {
 describe('buildProviderExtraHeaders', () => {
   it('returns x-grok-conv-id for xai', () => {
     expect(buildProviderExtraHeaders('xai', 'sess-abc')).toEqual({
-      'x-grok-conv-id': 'sess-abc',
+      'x-grok-conv-id': expect.stringMatching(/^manifest-[a-f0-9]{32}$/),
     });
   });
 
   it('returns x-session-id for openrouter', () => {
     expect(buildProviderExtraHeaders('openrouter', 'ba44c58a-a1f5-4cc7-bc2a-9394d266cc2b')).toEqual(
-      { 'x-session-id': 'ba44c58a-a1f5-4cc7-bc2a-9394d266cc2b' },
+      { 'x-session-id': expect.stringMatching(/^manifest-[a-f0-9]{32}$/) },
     );
   });
 
-  it('does not forward the fallback default session id to openrouter', () => {
-    expect(buildProviderExtraHeaders('openrouter', 'default')).toBeUndefined();
+  it('does not create provider headers without an explicit cache key', () => {
+    expect(buildProviderExtraHeaders('xai')).toBeUndefined();
+    expect(buildProviderExtraHeaders('openrouter')).toBeUndefined();
   });
 
   it('is case-insensitive for provider name', () => {
     expect(buildProviderExtraHeaders('OpenRouter', 'sess-xyz')).toEqual({
-      'x-session-id': 'sess-xyz',
+      'x-session-id': expect.stringMatching(/^manifest-[a-f0-9]{32}$/),
     });
   });
 

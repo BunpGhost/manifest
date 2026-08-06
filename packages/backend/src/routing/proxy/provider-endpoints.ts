@@ -1,4 +1,9 @@
+import {
+  getManagedFreeLiteLlmBaseUrl,
+  MANAGED_FREE_PROVIDER_CONFIGS,
+} from '../../common/constants/managed-free-providers';
 import { OLLAMA_CLOUD_HOST, OLLAMA_HOST } from '../../common/constants/ollama';
+import { stripVendorPrefix } from '../../common/constants/openai-models';
 import { PROVIDER_BY_ID_OR_ALIAS } from '../../common/constants/providers';
 import {
   CODEX_CLI_ORIGINATOR,
@@ -55,6 +60,10 @@ export interface ProviderEndpoint {
    * endpoints that only reuse the Anthropic protocol shape.
    */
   skipSubscriptionIdentity?: boolean;
+  /** Forward the caller's streaming choice to a Responses-shaped endpoint. */
+  forwardResponsesStream?: boolean;
+  /** Map Chat Completions token caps to `max_output_tokens`. */
+  acceptsMaxOutputTokens?: boolean;
 }
 
 const openaiStreamUsage = { streamUsageReporting: 'openai_stream_options' as const };
@@ -70,6 +79,17 @@ const pioneerHeaders = (apiKey: string) => ({
 });
 
 const openaiPath = () => '/v1/chat/completions';
+const BEDROCK_OPENAI_MODEL_RE = /(?:^|\.)openai\./i;
+const BEDROCK_ANTHROPIC_MODEL_RE = /(?:^|\.)anthropic\./i;
+
+export function resolveBedrockEndpointKey(
+  model: string,
+): 'bedrock' | 'bedrock-responses' | 'bedrock-anthropic' {
+  const bareModel = stripVendorPrefix(model);
+  if (BEDROCK_OPENAI_MODEL_RE.test(bareModel)) return 'bedrock-responses';
+  if (BEDROCK_ANTHROPIC_MODEL_RE.test(bareModel)) return 'bedrock-anthropic';
+  return 'bedrock';
+}
 
 const anthropicHeaders = (apiKey: string, authType?: string): Record<string, string> => {
   if (authType === 'subscription') {
@@ -119,6 +139,7 @@ const KILO_GATEWAY_BASE = 'https://api.kilo.ai/api/gateway';
 const NOUS_PORTAL_BASE = 'https://inference-api.nousresearch.com';
 const NVIDIA_NIM_BASE = 'https://integrate.api.nvidia.com';
 const FIREWORKS_INFERENCE_BASE = 'https://api.fireworks.ai/inference';
+const HUGGING_FACE_INFERENCE_BASE = 'https://router.huggingface.co';
 const PIONEER_BASE = 'https://api.pioneer.ai';
 const chatgptSubscriptionHeaders = (apiKey: string) => ({
   Authorization: `Bearer ${apiKey}`,
@@ -126,6 +147,21 @@ const chatgptSubscriptionHeaders = (apiKey: string) => ({
   originator: CODEX_CLI_ORIGINATOR,
   'user-agent': CODEX_CLI_USER_AGENT,
 });
+
+const MANAGED_FREE_ENDPOINTS: Record<string, ProviderEndpoint> = Object.fromEntries(
+  MANAGED_FREE_PROVIDER_CONFIGS.map((config) => [
+    config.id,
+    {
+      get baseUrl() {
+        return getManagedFreeLiteLlmBaseUrl();
+      },
+      buildHeaders: openaiHeaders,
+      buildPath: openaiPath,
+      format: 'openai',
+      ...openaiStreamUsage,
+    },
+  ]),
+);
 
 export const PROVIDER_ENDPOINTS: Record<string, ProviderEndpoint> = {
   openai: {
@@ -161,6 +197,21 @@ export const PROVIDER_ENDPOINTS: Record<string, ProviderEndpoint> = {
     buildPath: openaiPath,
     format: 'openai',
     ...openaiStreamUsage,
+  },
+  'bedrock-responses': {
+    baseUrl: getBedrockMantleBaseUrl(),
+    buildHeaders: openaiHeaders,
+    buildPath: () => '/v1/responses',
+    format: 'chatgpt',
+    forwardResponsesStream: true,
+    acceptsMaxOutputTokens: true,
+  },
+  'bedrock-anthropic': {
+    baseUrl: getBedrockMantleBaseUrl(),
+    buildHeaders: anthropicApiKeyHeaders,
+    buildPath: () => '/anthropic/v1/messages',
+    format: 'anthropic',
+    skipSubscriptionIdentity: true,
   },
   deepseek: {
     baseUrl: 'https://api.deepseek.com',
@@ -226,6 +277,13 @@ export const PROVIDER_ENDPOINTS: Record<string, ProviderEndpoint> = {
   },
   groq: {
     baseUrl: 'https://api.groq.com/openai',
+    buildHeaders: openaiHeaders,
+    buildPath: openaiPath,
+    format: 'openai',
+    ...openaiStreamUsage,
+  },
+  huggingface: {
+    baseUrl: HUGGING_FACE_INFERENCE_BASE,
     buildHeaders: openaiHeaders,
     buildPath: openaiPath,
     format: 'openai',
@@ -415,6 +473,7 @@ export const PROVIDER_ENDPOINTS: Record<string, ProviderEndpoint> = {
     format: 'openai',
     ...openaiStreamUsage,
   },
+  ...MANAGED_FREE_ENDPOINTS,
   ollama: {
     baseUrl: OLLAMA_HOST,
     buildHeaders: () => ({ 'Content-Type': 'application/json' }),

@@ -96,7 +96,7 @@ interface Mocks {
     forward: jest.Mock;
     convertGoogleStreamChunk: jest.Mock;
     createAnthropicStreamTransformer: jest.Mock;
-    convertChatGptStreamChunk: jest.Mock;
+    createChatGptStreamTransformer: jest.Mock;
   };
   openaiOauth: { unwrapToken: jest.Mock };
   minimaxOauth: { unwrapToken: jest.Mock };
@@ -126,7 +126,7 @@ function buildService(mocks: Partial<Mocks> = {}): { service: PlaygroundService;
       forward: jest.fn(),
       convertGoogleStreamChunk: jest.fn(),
       createAnthropicStreamTransformer: jest.fn(),
-      convertChatGptStreamChunk: jest.fn(),
+      createChatGptStreamTransformer: jest.fn(),
     },
     openaiOauth: { unwrapToken: jest.fn().mockResolvedValue(null) },
     minimaxOauth: { unwrapToken: jest.fn().mockResolvedValue(null) },
@@ -213,7 +213,7 @@ describe('PlaygroundService.runStream — error body truncation', () => {
     // body is 10K 'A's, so the persisted value is exactly 2000 'A's.
     expect(mocks.messageRepo.insert).toHaveBeenCalledTimes(1);
     const row = mocks.messageRepo.insert.mock.calls[0][0];
-    expect(row.status).toBe('error');
+    expect(row.status).toBe('failed');
     expect(row.error_http_status).toBe(502);
     expect((row.error_message as string).length).toBe(2000);
     expect(row.error_message).toBe('A'.repeat(2000));
