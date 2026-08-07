@@ -7,7 +7,7 @@ import {
   Tier,
   ScoringReason,
 } from './types';
-import { DEFAULT_CONFIG } from './config';
+import { DEFAULT_CONFIG, buildConfig } from './config';
 import { KeywordTrie, TrieMatch } from './keyword-trie';
 import {
   extractUserTexts,
@@ -64,7 +64,6 @@ function mergeConfig(partial?: Partial<ScorerConfig>): ScorerConfig {
   if (!partial) return DEFAULT_CONFIG;
   // If language is specified, rebuild dimensions with localized keywords
   if (partial.language && partial.language !== DEFAULT_CONFIG.language) {
-    const { buildConfig } = require('./config');
     const langConfig = buildConfig(partial.language);
     return { ...langConfig, ...partial, dimensions: langConfig.dimensions };
   }

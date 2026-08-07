@@ -1,6 +1,6 @@
 import { createMemo, For, type Component } from 'solid-js';
 
-interface TierBreakdownRow {
+export interface TierBreakdownRow {
   tier: string;
   count: number;
   share_pct: number;

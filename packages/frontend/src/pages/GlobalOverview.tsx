@@ -47,6 +47,7 @@ import UserDiscoveryModal, {
 } from '../components/UserDiscoveryModal.jsx';
 import Sparkline from '../components/Sparkline.jsx';
 import TierBreakdownChart from '../components/TierBreakdownChart.js';
+import type { TierBreakdownRow } from '../components/TierBreakdownChart.js';
 import FilterSelect from '../components/FilterSelect.jsx';
 import Select from '../components/Select.jsx';
 import { authLabel, authBadgeFor } from '../components/AuthBadge.jsx';
@@ -241,7 +242,7 @@ const GlobalOverview: Component = () => {
   // ── Data resources (5 parallel) ──────────────────────────────────────
   const [tierBreakdown] = createResource(
     () => ({ range: chartRange(), _ping: messagePing() }),
-    (p) => getTierBreakdown(p.range),
+    (p) => getTierBreakdown(p.range) as Promise<TierBreakdownRow[]>,
   );
 
   const [overview] = createResource(

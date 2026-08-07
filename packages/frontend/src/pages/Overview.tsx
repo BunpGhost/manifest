@@ -16,6 +16,7 @@ import FilterSelect from '../components/FilterSelect.jsx';
 import { AGENT_COLORS } from '../components/MultiAgentTokenChart.jsx';
 import CostByModelTable from '../components/CostByModelTable.jsx';
 import TierBreakdownChart from '../components/TierBreakdownChart.js';
+import type { TierBreakdownRow } from '../components/TierBreakdownChart.js';
 import ErrorState from '../components/ErrorState.jsx';
 import MessageTable from '../components/MessageTable.jsx';
 import OverviewSkeleton from '../components/OverviewSkeleton.jsx';
@@ -262,7 +263,7 @@ const Overview: Component = () => {
   );
   const [tierBreakdown] = createResource(
     () => ({ range: range(), agentName: params.agentName, _ping: messagePing() }),
-    (p) => getTierBreakdown(p.range, p.agentName),
+    (p) => getTierBreakdown(p.range, p.agentName) as Promise<TierBreakdownRow[]>,
   );
 
   const [providerCostTs] = createResource(
