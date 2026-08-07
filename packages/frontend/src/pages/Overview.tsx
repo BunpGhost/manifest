@@ -40,7 +40,7 @@ import {
 } from '../services/api/analytics.js';
 import { preloadModelDisplayNames } from '../services/model-display.js';
 import { isRecentlyCreated, isSetupPending, clearSetupPending } from '../services/recent-agents.js';
-import { analyticsPing } from '../services/sse.js';
+import { analyticsPing, messagePing } from '../services/sse.js';
 import {
   RANGE_STORAGE_KEY,
   VALID_RANGES,

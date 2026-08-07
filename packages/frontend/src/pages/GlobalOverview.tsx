@@ -58,7 +58,7 @@ import {
   type MessageColumnKey,
   type MessageRow,
 } from '../components/message-table-types.js';
-import { agentPing, analyticsPing, routingPing } from '../services/sse.js';
+import { agentPing, analyticsPing, routingPing, messagePing } from '../services/sse.js';
 import '../styles/overview.css';
 import '../styles/charts.css';
 import '../styles/analytics-overview.css';
