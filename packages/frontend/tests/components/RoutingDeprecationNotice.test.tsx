@@ -3,28 +3,23 @@ import { render, screen } from '@solidjs/testing-library';
 import RoutingDeprecationNotice from '../../src/components/RoutingDeprecationNotice';
 
 describe('RoutingDeprecationNotice', () => {
-  it('renders the title and body', () => {
+  it('renders nothing (component disabled in this fork)', () => {
     render(() => (
       <RoutingDeprecationNotice title="Complexity routing is going away.">
         Some explanatory body text.
       </RoutingDeprecationNotice>
     ));
-    expect(screen.getByText('Complexity routing is going away.')).toBeDefined();
-    expect(screen.getByText('Some explanatory body text.')).toBeDefined();
+    expect(screen.queryByText('Complexity routing is going away.')).toBeNull();
+    expect(screen.queryByText('Some explanatory body text.')).toBeNull();
   });
 
-  it('exposes a note role for assistive technology', () => {
+  it('exposes no note role for assistive technology (disabled)', () => {
     render(() => <RoutingDeprecationNotice title="T">B</RoutingDeprecationNotice>);
-    expect(screen.getByRole('note')).toBeDefined();
+    expect(screen.queryByRole('note')).toBeNull();
   });
 
-  it('renders a "View more" link to the deprecation blog post in a new tab', () => {
+  it('renders no "View more" link to the deprecation blog post (disabled)', () => {
     render(() => <RoutingDeprecationNotice title="T">B</RoutingDeprecationNotice>);
-    const link = screen.getByRole('link', { name: 'View more' }) as HTMLAnchorElement;
-    expect(link.getAttribute('href')).toBe(
-      'https://manifest.build/blog/deprecating-rule-based-routing/',
-    );
-    expect(link.getAttribute('target')).toBe('_blank');
-    expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(screen.queryByRole('link', { name: 'View more' })).toBeNull();
   });
 });

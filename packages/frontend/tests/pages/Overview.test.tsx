@@ -34,6 +34,7 @@ vi.mock('../../src/services/api.js', () => ({
   getCustomProviders: (...args: unknown[]) => mockGetCustomProviders(...args),
   setMessageFeedback: (...args: unknown[]) => mockSetMessageFeedback(...args),
   clearMessageFeedback: (...args: unknown[]) => mockClearMessageFeedback(...args),
+  getTierBreakdown: () => Promise.resolve([]),
 }));
 
 vi.mock('../../src/services/sse.js', () => ({

@@ -65,6 +65,7 @@ vi.mock('../../src/services/api/analytics.js', () => ({
   RECOVERED_REQUESTS_TOOLTIP: 'Successful requests that were recovered by Auto-fix or fallback.',
   REQUEST_SUCCESS_RATE_TOOLTIP:
     'Successful requests over all requests. Recovered requests count as successful.',
+  getTierBreakdown: () => Promise.resolve([]),
   totalAttemptsTooltip: (doctor: boolean) =>
     doctor
       ? 'Every provider call counts here, including fallback retries and auto-fixed attempts. One request can produce several attempts.'
@@ -223,6 +224,7 @@ vi.mock('../../src/services/sse.js', async () => {
   const [agentPing, setAgentPing] = createSignal(0);
   const [analyticsPing, setAnalyticsPing] = createSignal(0);
   const [routingPing, setRoutingPing] = createSignal(0);
+  const [messagePing, setMessagePing] = createSignal(0);
   sseMocks.bumpAgent = () => setAgentPing((n) => n + 1);
   sseMocks.bumpAnalytics = () => setAnalyticsPing((n) => n + 1);
   sseMocks.bumpRouting = () => setRoutingPing((n) => n + 1);
@@ -230,8 +232,9 @@ vi.mock('../../src/services/sse.js', async () => {
     setAgentPing(0);
     setAnalyticsPing(0);
     setRoutingPing(0);
+    setMessagePing(0);
   };
-  return { agentPing, analyticsPing, routingPing };
+  return { agentPing, analyticsPing, routingPing, messagePing };
 });
 
 vi.mock('../../src/services/scroll-fade.js', () => ({
@@ -466,17 +469,11 @@ describe('GlobalOverview filter onUnselectAll', () => {
     }
   });
 
-  it('opens the user-discovery modal after agents load and dismisses it', async () => {
+  it('does not open the user-discovery modal (marketing modal removed in fork)', async () => {
     render(() => <GlobalOverview />);
 
-    await waitFor(() => expect(document.body.textContent).toContain('Book my slot to get $25'));
-
-    const later = [...document.querySelectorAll('button')].find(
-      (b) => b.textContent === 'Maybe later',
-    ) as HTMLButtonElement;
-    fireEvent.click(later);
-
-    expect(localStorage.getItem('manifest:user-discovery-modal-dismissed:v1')).toBe('true');
-    await waitFor(() => expect(document.body.textContent).not.toContain('Book my slot to get $25'));
+    // Fork neutralizes the UserDiscoveryModal (marketing) — assert it never appears.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(document.body.textContent).not.toContain('Book my slot to get $25');
   });
 });

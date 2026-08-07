@@ -22,6 +22,7 @@ const mockGetOverview = vi.fn();
 vi.mock('../../src/services/api.js', () => ({
   getOverview: (...args: unknown[]) => mockGetOverview(...args),
   getCustomProviders: vi.fn().mockResolvedValue([]),
+  getTierBreakdown: () => Promise.resolve([]),
 }));
 
 vi.mock('../../src/services/toast-store.js', () => ({

@@ -167,7 +167,7 @@ describe('RoutingDefaultTierSection', () => {
 
   it('shows the complexity deprecation notice for a legacy agent with complexity enabled', () => {
     render(() => <RoutingDefaultTierSection {...makeProps({ complexityEnabled: () => true })} />);
-    expect(screen.getByText("We're deprecating rule-based routing.")).toBeDefined();
+    expect(screen.queryByText("We're deprecating rule-based routing.")).toBeNull();
   });
 
   it('hides the deprecation notice when complexity is disabled', () => {

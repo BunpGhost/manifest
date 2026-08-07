@@ -122,6 +122,7 @@ vi.mock('../../src/services/api/analytics.js', () => ({
   getPerModelReliability: () => Promise.resolve([]),
   getPerAgentReliability: () => Promise.resolve([]),
   getErrorBreakdown: () => Promise.resolve({ by_class: {}, by_origin: {}, auto_fixed: 0 }),
+  getTierBreakdown: () => Promise.resolve([]),
 }));
 
 vi.mock('../../src/services/api/billing.js', () => ({
