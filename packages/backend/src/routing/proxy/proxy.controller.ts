@@ -62,7 +62,7 @@ import type {
 import { ResponsesSseError } from './chatgpt-adapter';
 import { redactInlineImageDataUrls } from './inline-image-redaction';
 import { scrubSecrets } from '../../common/utils/secret-scrub';
-import { openAiModelId, subscriptionOpenAiModelId } from './openai-model-id';
+import { openAiModelId } from './openai-model-id';
 import { openAiModelCapabilities, type OpenAiModelCapabilities } from './openai-model-capabilities';
 import { PlanService } from '../../billing/plan.service';
 import { StreamFailure } from './stream-writer';
