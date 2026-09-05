@@ -28,8 +28,10 @@ Complexity-based routing is essential for our setup, and this fork ensures it co
 | `max_tokens` scoring removed | `scoring/dimensions/contextual-dimensions.ts` + `scoring/index.ts` | Removed `maxTokens` from `scoreExpectedOutputLength()` — `max_tokens` is not a content signal; was inflating scores due to Hermes' `reasoning_effort: xhigh` |
 | 50K context override removed | Manifest admin config | Removed `max_tokens` override so providers use native context limits |
 | Native request recording | `routing/proxy/attempt-recording.service.ts` | Records full request/response bodies per provider attempt (filesystem at `.data/request-recordings/`) — `record_messages` per agent, enabled for all profiles |
+| `x-opencode-session` header | `routing/proxy/provider-hooks.ts` | Sends `x-opencode-session` (hash per conversation) on OpenCode Go/Zen requests — required by OC Go from 06/09/2026 |
+| Proxy robustness + privacy | `routing/proxy/`, `autofix/` | Streaming for custom providers, `finish_reason: tool_calls`, fallback on empty completions, OC Go Responses-only routing, scrub provider secrets, redact inline images in recordings |
 
-**Latest commit:** `cc40208b6`
+**Latest commit:** `7541f84d6`
 
 ## Setup notes
 
