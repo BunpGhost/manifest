@@ -147,6 +147,28 @@ describe('resolveModelCapabilityMetadata', () => {
     expect(resolved.outputModalities).toEqual(['text']);
   });
 
+  it('falls back to the connection provider for flat-namespace reseller ids', async () => {
+    // opencode-go / opencode-zen ids are not vendor-prefixed the way the
+    // provenance rewrite assumes, and models.dev keys their catalog under the
+    // reseller id itself. The rewrite must not shadow an entry that only
+    // exists under the connection's own provider (deepseek-v4.1-flash has no
+    // deepseek/ entry on models.dev at all).
+    modelsDevSync.lookupModel.mockImplementation((provider: string) =>
+      provider === 'opencode-go' ? makeModelsDevEntry({ id: 'deepseek-v4.1-flash' }) : null,
+    );
+
+    const resolved = await resolveModelCapabilityMetadata(
+      makeModel({ id: 'opencode-go/deepseek-v4.1-flash', provider: 'opencode-go' }),
+      paramSpecs,
+      modelsDevSync,
+    );
+
+    expect(modelsDevSync.lookupModel).toHaveBeenCalledWith('deepseek', 'deepseek-v4.1-flash');
+    expect(modelsDevSync.lookupModel).toHaveBeenCalledWith('opencode-go', 'deepseek-v4.1-flash');
+    expect(resolved.inputModalities).toEqual(['text', 'image']);
+    expect(resolved.capabilities).toContain('image');
+  });
+
   it('looks up metadata under the underlying provider for vendor-prefixed ids', async () => {
     await resolveModelCapabilityMetadata(
       makeModel({ id: 'anthropic.claude-sonnet-5-v1:0', provider: 'bedrock' }),

@@ -133,10 +133,21 @@ export async function resolveModelCapabilityMetadata(
   // Bedrock vendor-prefixed ids). Resolve that provenance for metadata only.
   const metadata = resolveProviderMetadataIdentity(model.provider, model.id);
   const metadataProvider = metadata.provider ?? model.provider;
-  const modelsDevEntry = modelsDevSync.lookupModel(metadataProvider, metadata.model);
+  // The rewrite above resolves the provenance of vendor-prefixed ids
+  // (`anthropic.claude-...` on bedrock, gateway ids) so metadata is read from
+  // the underlying provider. Flat-namespace resellers (opencode-go /
+  // opencode-zen) are the exception: their ids are not vendor-prefixed the way
+  // the rewrite assumes, and models.dev keys their catalog under the reseller
+  // id itself, so the rewrite misses entries that do exist there. Fall back to
+  // the connection's own provider before giving up.
+  const modelsDevEntry =
+    modelsDevSync.lookupModel(metadataProvider, metadata.model) ??
+    modelsDevSync.lookupModel(model.provider, metadata.model);
   // Curated facts are the last resort, and applying them here (not only at
   // discovery time) means stale cached_models still resolve correctly.
-  const known = lookupKnownModalities(metadataProvider, metadata.model);
+  const known =
+    lookupKnownModalities(metadataProvider, metadata.model) ??
+    lookupKnownModalities(model.provider, metadata.model);
   return {
     capabilities: mergeModelCapabilities(
       model.capabilities,
